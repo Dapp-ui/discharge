@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, dialog, ipcRenderer } from 'electron'
 
 export const api = {
   /**
@@ -9,8 +9,12 @@ export const api = {
    * The function below can accessed using `window.Main.sendMessage`
    */
 
-  sendMessage: (message: string) => {
-    ipcRenderer.send('message', message)
+  send: (message: string, data: any = undefined) => {
+    ipcRenderer.send(message, data)
+  },
+
+  sendSync: (message: string, data: any = undefined) => {
+    return ipcRenderer.sendSync(message, data)
   },
 
   /**
@@ -18,7 +22,7 @@ export const api = {
    */
   on: (channel: string, callback: Function) => {
     ipcRenderer.on(channel, (_, data) => callback(data))
-  }
+  },
 }
 
 contextBridge.exposeInMainWorld('Main', api)

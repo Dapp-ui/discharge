@@ -1,12 +1,26 @@
 import { GlobalStyle } from './styles/GlobalStyle'
-
-import { Greetings } from './components/Greetings'
+import { MantineProvider, Group } from '@mantine/core'
+import { ElectronProvider } from './providers/ElectronProvider'
+import { Page } from './Page'
 
 export function App() {
   return (
-    <>
-      <GlobalStyle />
-      <Greetings />
-    </>
+    <ElectronProvider>
+      <MantineProvider
+        theme={{ colorScheme: 'dark', fontFamily: 'Poppins' }}
+        withGlobalStyles
+        withNormalizeCSS
+      >
+        <Group
+          direction="column"
+          position="center"
+          align="center"
+          sx={{ width: '100vw', height: '100vh', padding: '1rem' }}
+        >
+          <GlobalStyle />
+          <Page />
+        </Group>
+      </MantineProvider>
+    </ElectronProvider>
   )
 }
