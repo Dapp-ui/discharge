@@ -1,20 +1,42 @@
-import { Loader, Group, Skeleton } from '@mantine/core'
-import { useEffect, useState } from 'react'
-import { ESTUARY_API_KEY, getFiles } from '../../lib/estuary'
-import { useElectron } from '../../providers/ElectronProvider'
+import { Group, Skeleton, Text } from '@mantine/core'
+import { Folder } from 'tabler-icons-react'
+import { useEstuary } from '../../providers/EstuaryProvider'
 
-export function Files() {
-  const { preferences } = useElectron()
+function File({ file }: any) {
+  return (
+    <Group sx={{ width: '100%' }}>
+      {file.name.substring(0, file.lastIndexOf('.'))}
+    </Group>
+  )
+}
 
-  const [loading, setLoading] = useState(true)
-  const [files, setFiles] = useState(null)
+function Display({ files }: any) {
+  return (
+    <>
+      {files.length == 0 ? (
+        <Group
+          direction="column"
+          align="center"
+          sx={{ width: '100%', height: '100%', justifyContent: 'center' }}
+        >
+          <Folder size="50px" color="#999999" />
+          <Text size="sm" color="dimmed">
+            Nothing here! <br /> Add files to get started.
+          </Text>
+        </Group>
+      ) : (
+        <Group direction="column" sx={{ width: '100%' }}>
+          {files.map((file: any) => (
+            <File file={file} />
+          ))}
+        </Group>
+      )}
+    </>
+  )
+}
 
-  useEffect(() => {
-    getFiles(preferences.uid).then(data => {
-      setFiles(data)
-      setLoading(false)
-    })
-  }, [])
+export function Files({ files }: any) {
+  const { loaded } = useEstuary()
 
   return (
     <Group
@@ -23,7 +45,7 @@ export function Files() {
       align="center"
       sx={{ height: '75vh', width: '90vw' }}
     >
-      {loading ? (
+      {!loaded ? (
         <>
           <Skeleton width="100%" height="10vh" />
           <Skeleton width="100%" height="10vh" />
@@ -32,7 +54,9 @@ export function Files() {
           <Skeleton width="100%" height="10vh" />
           <Skeleton width="100%" height="10vh" />
         </>
-      ) : null}
+      ) : (
+        <Display files={files} />
+      )}
     </Group>
   )
 }

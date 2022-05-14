@@ -1,4 +1,4 @@
-import { contextBridge, dialog, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
 export const api = {
   /**

@@ -12,21 +12,3 @@ export async function getFiles(userId: string) {
   )
   return await request.json()
 }
-
-export async function uploadFile(
-  userId: string,
-  file: File,
-  onprogress: (event: Event) => {}
-) {
-  const data = new FormData()
-  data.append('data', file)
-  const request = new XMLHttpRequest()
-  request.upload.onprogress = onprogress
-  window.Main.send('message', file.path)
-  request.open(
-    'POST',
-    `https://api.estuary.tech/content/add?collection=${userId}?collectionPath=${file.path}`
-  )
-  request.setRequestHeader('Authorization', `Bearer ${ESTUARY_API_KEY}`)
-  request.send(data)
-}

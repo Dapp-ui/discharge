@@ -1,6 +1,6 @@
-import { Onboarding } from './pages/Onboarding'
 import { useElectron } from './providers/ElectronProvider'
 import { Welcome } from './pages/Welcome'
+import { Onboarding } from './pages/Onboarding'
 import { Application } from './pages/Application'
 
 export function Page() {

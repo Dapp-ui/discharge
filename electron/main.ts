@@ -1,7 +1,10 @@
-const path = require('path')
-const chokidar = require('chokidar')
+import { join } from 'path'
+import chokidar from 'chokidar'
+import fs from 'fs'
 
 import { Store } from './storage'
+import { encrypt, getFiles, uploadFile } from './estuary'
+
 import {
   app,
   BrowserWindow,
@@ -12,7 +15,7 @@ import {
   dialog,
 } from 'electron'
 
-let mainWindow: BrowserWindow | null
+let window: BrowserWindow | null
 let tray: Tray | null
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -23,10 +26,15 @@ const __dirname =
     ? process.resourcesPath
     : app.getAppPath()
 
+if (!fs.existsSync(join(__dirname, 'files')))
+  fs.mkdirSync(join(__dirname, 'files'))
+if (!fs.existsSync(join(app.getPath('userData'), 'Temp')))
+  fs.mkdirSync(join(app.getPath('userData'), 'Temp'))
+
 const preferences = new Store({
   configName: 'preferences',
   defaults: {
-    path: __dirname,
+    path: join(__dirname, 'files'),
     sync: 'auto',
   },
 })
@@ -37,7 +45,7 @@ const watcher = chokidar.watch(preferences.get('path'), {
 })
 
 function createTray() {
-  const icon = path.join(__dirname, 'assets', 'logo.ico') // required.
+  const icon = join(__dirname, 'assets', 'logo.ico') // required.
   const trayicon = nativeImage.createFromPath(icon)
   tray = new Tray(trayicon.resize({ width: 16 }))
   const contextMenu = Menu.buildFromTemplate([
@@ -60,8 +68,8 @@ function createTray() {
 function createWindow() {
   if (!tray) createTray()
 
-  mainWindow = new BrowserWindow({
-    icon: path.join(__dirname, 'assets', 'logo.png'),
+  window = new BrowserWindow({
+    icon: join(__dirname, 'assets', 'logo.ico'),
     resizable: false,
     width: 400,
     height: 600,
@@ -73,19 +81,18 @@ function createWindow() {
     },
   })
 
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
-  mainWindow.setMenu(null)
-  mainWindow.webContents.openDevTools()
+  window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
+  window.setMenu(null)
+  window.webContents.openDevTools()
 
-  mainWindow.on('closed', () => {
-    mainWindow = null
+  window.on('closed', () => {
+    window = null
   })
 }
 
 async function registerListeners() {
-  /**
-   * This comes from bridge integration, check bridge.ts
-   */
+  /* IPC Main Listeners */
+
   ipcMain.on('message', (_, message) => {
     console.log(message)
   })
@@ -95,14 +102,18 @@ async function registerListeners() {
   })
 
   ipcMain.on('app:preferences:set:path', async (event, data) => {
-    const response = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
-    })
-    if (response.canceled) return
-    watcher.unwatch(preferences.get('path'))
-    preferences.set('path', response.filePaths[0])
-    watcher.watch(response.filePaths[0])
-    event.reply('client:preferences:updated', preferences.data)
+    try {
+      const response = await dialog.showOpenDialog({
+        properties: ['openDirectory'],
+      })
+      if (response.canceled) return
+      watcher.unwatch(preferences.get('path'))
+      preferences.set('path', response.filePaths[0])
+      watcher.add(response.filePaths[0])
+      event.reply('client:preferences:updated', preferences.data)
+    } catch (error) {
+      console.log(error)
+    }
   })
 
   ipcMain.on('app:preferences:set:uid', async (event, uid) => {
@@ -119,6 +130,25 @@ async function registerListeners() {
     preferences.set('sync', sync)
     event.reply('client:preferences:updated', preferences.data)
   })
+
+  ipcMain.on('app:files:get', async (event, _) => {
+    const files = await getFiles(preferences.get('uid'))
+    event.returnValue = files
+  })
+
+  /* Chokidar (Directory) Listeners */
+  watcher.on('add', (path: string) => {
+    if (preferences.get('sync') !== 'auto') return
+    else {
+      const out = encrypt(
+        path,
+        preferences.get('key'),
+        join(app.getPath('userData'), 'Temp')
+      )
+      const dir = path.replace(preferences.get('path'), '')
+      uploadFile(preferences.get('uid'), out, dir, event => {})
+    }
+  })
 }
 
 app
@@ -128,7 +158,7 @@ app
   .catch(e => console.error(e))
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin' && mainWindow) mainWindow.hide()
+  if (process.platform !== 'darwin' && window) window.hide()
 })
 
 app.on('activate', () => {

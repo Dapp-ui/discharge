@@ -28,7 +28,10 @@ export function Welcome() {
     if (!uuid.test(id.trim())) setIdError(true)
     if (password.length < 6) setPasswordError(true)
     if (confirm != password) setConfirmError(true)
+    console.log(password, id)
     const key = AES.encrypt(password, id).toString()
+    console.log(key)
+    window.Main.send('message', key)
     window.Main.send('app:preferences:set:uid', id)
     window.Main.send('app:preferences:set:key', key)
   }
@@ -76,7 +79,7 @@ export function Welcome() {
           setConfirmError(false)
           setConfirm(event.target.value)
         }}
-        error={passwordError}
+        error={confirmError}
         placeholder="Confirm Password"
         sx={{ width: '100%' }}
       />

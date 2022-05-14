@@ -10,9 +10,7 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { Edit } from 'tabler-icons-react'
 import { useElectron } from '../../providers/ElectronProvider'
-import { useState } from 'react'
 import { DirectoryButton } from './styles'
 
 function Setting({ label, children }: any) {
