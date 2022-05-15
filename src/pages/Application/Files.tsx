@@ -3,9 +3,10 @@ import { Folder } from 'tabler-icons-react'
 import { useEstuary } from '../../providers/EstuaryProvider'
 
 function File({ file }: any) {
+  window.Main.send('message', file)
   return (
-    <Group sx={{ width: '100%' }}>
-      {file.name.substring(0, file.lastIndexOf('.'))}
+    <Group position="apart" sx={{ width: '100%' }}>
+      <Text>{file.name.slice(0, file.name.length - 4)}</Text>
     </Group>
   )
 }
@@ -26,8 +27,8 @@ function Display({ files }: any) {
         </Group>
       ) : (
         <Group direction="column" sx={{ width: '100%' }}>
-          {files.map((file: any) => (
-            <File file={file} />
+          {files.map((file: any, i: number) => (
+            <File key={i} file={file} />
           ))}
         </Group>
       )}
