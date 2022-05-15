@@ -3,7 +3,7 @@ import chokidar from 'chokidar'
 import fs from 'fs'
 
 import { Store } from './storage'
-import { encrypt, getFiles, uploadFile } from './estuary'
+import { encrypt, getItems, uploadFile } from './estuary'
 
 import {
   app,
@@ -131,8 +131,8 @@ async function registerListeners() {
     event.reply('client:preferences:updated', preferences.data)
   })
 
-  ipcMain.on('app:files:get', async (event, _) => {
-    const files = await getFiles(preferences.get('uid'))
+  ipcMain.on('app:files:get', async (event, path) => {
+    const files = await getItems(preferences.get('uid'), path)
     event.returnValue = files
   })
 

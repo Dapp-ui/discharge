@@ -5,30 +5,39 @@ import { Files } from './Files'
 import { Preferences } from './Preferences'
 import { Uploading } from './Uploading'
 import { useElectron } from '../../providers/ElectronProvider'
-import { getFiles } from '../../lib/estuary'
+import { getItems } from '../../lib/estuary'
 import { useEstuary } from '../../providers/EstuaryProvider'
 
 export function Application() {
   const [active, setActive] = useState('files')
+  const [loaded, setLoaded] = useState(false)
+  const [data, setData] = useState([{}])
 
   const { preferences } = useElectron()
-  const { files } = useEstuary()
+
+  useEffect(() => {
+    getItems(preferences.uid, '/').then(data => {
+      setData(data)
+      setLoaded(true)
+    })
+  }, [])
 
   return (
     <>
-      <Group grow sx={{ width: '100%' }}>
+      <Group sx={{ width: '100%' }} spacing={0} grow>
         <Center
           onClick={() => setActive('files')}
           p="md"
           sx={{
             cursor: 'pointer',
             transition: 'all 300ms',
-            border:
-              active == 'files' ? '1px solid #333333' : '1px solid #121212',
+            borderBottom:
+              active == 'files'
+                ? '1px solid #333333'
+                : '1px solid rgba(0,0,0,0)',
             backgroundColor: active == 'files' ? '#121212' : '',
-            borderRadius: '4px',
             ':hover': {
-              border: '1px solid #333333',
+              borderBottom: '1px solid #333333',
             },
           }}
         >
@@ -40,12 +49,13 @@ export function Application() {
           sx={{
             cursor: 'pointer',
             transition: 'all 300ms',
-            border:
-              active == 'upload' ? '1px solid #333333' : '1px solid #121212',
+            borderBottom:
+              active == 'upload'
+                ? '1px solid #333333'
+                : '1px solid rgba(0,0,0,0)',
             backgroundColor: active == 'upload' ? '#121212' : '',
-            borderRadius: '4px',
             ':hover': {
-              border: '1px solid #333333',
+              borderBottom: '1px solid #333333',
             },
           }}
         >
@@ -57,19 +67,20 @@ export function Application() {
           sx={{
             cursor: 'pointer',
             transition: 'all 300ms',
-            border:
-              active == 'settings' ? '1px solid #333333' : '1px solid #121212',
+            borderBottom:
+              active == 'settings'
+                ? '1px solid #333333'
+                : '1px solid rgba(0,0,0,0)',
             backgroundColor: active == 'settings' ? '#121212' : '',
-            borderRadius: '4px',
             ':hover': {
-              border: '1px solid #333333',
+              borderBottom: '1px solid #333333',
             },
           }}
         >
           <Settings />
         </Center>
       </Group>
-      {active == 'files' && <Files files={files} />}
+      {active == 'files' && <Files data={data} loaded={loaded} />}
       {active == 'upload' && <Uploading />}
       {active == 'settings' && <Preferences />}
     </>

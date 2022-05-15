@@ -16,7 +16,6 @@ import { useEffect, useState } from 'react'
 import { Ban, Check, CircleCheck, Copy, Cross, Flag } from 'tabler-icons-react'
 import { DirectoryButton, CopyButton } from './styles'
 import { useElectron } from '../../providers/ElectronProvider'
-import { v4 as uuidv4 } from 'uuid'
 import { AES } from 'crypto-js'
 import { ESTUARY_API_KEY } from '../../lib/estuary'
 

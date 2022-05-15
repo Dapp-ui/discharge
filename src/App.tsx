@@ -17,7 +17,7 @@ export function App() {
             direction="column"
             position="center"
             align="center"
-            sx={{ width: '100vw', height: '100vh', padding: '1rem' }}
+            sx={{ width: '100vw', height: '100vh' }}
           >
             <GlobalStyle />
             <Page />
