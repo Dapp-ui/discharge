@@ -3,7 +3,7 @@ import chokidar from 'chokidar'
 import fs from 'fs'
 
 import { Store } from './storage'
-import { encrypt, getItems, uploadFile } from './estuary'
+import { deleteItem, encrypt, getItems, uploadFile } from './estuary'
 
 import {
   app,
@@ -42,6 +42,7 @@ const preferences = new Store({
 const watcher = chokidar.watch(preferences.get('path'), {
   ignored: /(^|[\/\\])\../,
   persistent: true,
+  usePolling: true,
 })
 
 function createTray() {
@@ -132,21 +133,52 @@ async function registerListeners() {
   })
 
   ipcMain.on('app:files:get', async (event, path) => {
-    const files = await getItems(preferences.get('uid'), path)
+    let files = await getItems(preferences.get('uid'), path)
+    for (let i = 0; i < files.length; i++) {
+      if (
+        fs.existsSync(
+          join(
+            preferences.get('path'),
+            path,
+            files[i].name.slice(0, files[i].name.length - 4)
+          )
+        )
+      )
+        files[i].exists = true
+      else files[i].exists = false
+    }
     event.returnValue = files
   })
 
+  ipcMain.on('app:file:delete', async (event, file) => {
+    console.log(file)
+    try {
+      await deleteItem(preferences.get('uid'), file)
+    } catch (error) {
+      console.error(error)
+    }
+  })
+
+  ipcMain.on('app:file:remove', (_, path) => {
+    const full = join(preferences.get('path'), path)
+    fs.rmSync(full)
+  })
+
   /* Chokidar (Directory) Listeners */
-  watcher.on('add', (path: string) => {
+  watcher.on('add', async (path: string) => {
     if (preferences.get('sync') !== 'auto') return
     else {
-      const out = encrypt(
+      const out = await encrypt(
         path,
         preferences.get('key'),
         join(app.getPath('userData'), 'Temp')
       )
-      const dir = path.replace(preferences.get('path'), '')
-      uploadFile(preferences.get('uid'), out, dir, event => {})
+      const dir = path.replace(preferences.get('path'), '') + '.enc'
+      await uploadFile(preferences.get('uid'), out, dir, event => {
+        const complete = (((event.loaded / event.total) * 100) | 0) + '%'
+        console.log('upload percent: ' + complete)
+      })
+      fs.rmSync(out)
     }
   })
 }

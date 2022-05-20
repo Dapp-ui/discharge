@@ -41,7 +41,7 @@ export function Preferences() {
     window.Main.send('app:preferences:set:sync', value)
 
   return (
-    <Group direction="column">
+    <Group direction="column" mt="md">
       <Setting label="Upload Path">
         <DirectoryButton onClick={chooseDirectory}>
           {preferences.path}

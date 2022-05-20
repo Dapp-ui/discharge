@@ -18,6 +18,7 @@ export function App() {
             position="center"
             align="center"
             sx={{ width: '100vw', height: '100vh' }}
+            spacing={0}
           >
             <GlobalStyle />
             <Page />

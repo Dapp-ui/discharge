@@ -6,25 +6,13 @@ import { Preferences } from './Preferences'
 import { Uploading } from './Uploading'
 import { useElectron } from '../../providers/ElectronProvider'
 import { getItems } from '../../lib/estuary'
-import { useEstuary } from '../../providers/EstuaryProvider'
 
 export function Application() {
   const [active, setActive] = useState('files')
-  const [loaded, setLoaded] = useState(false)
-  const [data, setData] = useState([{}])
-
-  const { preferences } = useElectron()
-
-  useEffect(() => {
-    getItems(preferences.uid, '/').then(data => {
-      setData(data)
-      setLoaded(true)
-    })
-  }, [])
 
   return (
     <>
-      <Group sx={{ width: '100%' }} spacing={0} grow>
+      <Group sx={{ width: '100vw' }} spacing={0} grow>
         <Center
           onClick={() => setActive('files')}
           p="md"
@@ -80,7 +68,7 @@ export function Application() {
           <Settings />
         </Center>
       </Group>
-      {active == 'files' && <Files data={data} loaded={loaded} />}
+      {active == 'files' && <Files />}
       {active == 'upload' && <Uploading />}
       {active == 'settings' && <Preferences />}
     </>

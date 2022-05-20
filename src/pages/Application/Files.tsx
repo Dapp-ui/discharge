@@ -7,36 +7,64 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
+  TextInput,
 } from '@mantine/core'
 import { useEffect, useRef, useState, ForwardedRef } from 'react'
 import {
-  FolderX,
-  FolderPlus,
+  File as FileIcon,
   Download,
   Folder,
   Trash,
   X,
+  Refresh,
 } from 'tabler-icons-react'
 import { getItems } from '../../lib/estuary'
 import { useElectron } from '../../providers/ElectronProvider'
 import { useEstuary } from '../../providers/EstuaryProvider'
 
-function File({ item }: any) {
+function File({ item, path, filter, refresh }: any) {
+  if (!item.name.toLowerCase().includes(filter.trim().toLowerCase()))
+    return null
+
   return (
-    <Group position="apart" py="xs" px="xl" sx={{ width: '100%' }}>
-      <Text sx={{ maxWidth: '80%', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-        {item.name.length > 32
-          ? item.name.slice(0, item.name.length - 4).slice(0, 30) + '...'
-          : item.name.slice(0, item.name.length - 4)}
-      </Text>
+    <Group position="apart" py="xs" px="md" sx={{ width: '100%' }}>
+      <Group sx={{ maxWidth: '80%', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <FileIcon size="16px" />
+        <Text>
+          {item.name.length > 32
+            ? item.name.slice(0, item.name.length - 4).slice(0, 30) + '...'
+            : item.name.slice(0, item.name.length - 4)}
+        </Text>
+      </Group>
+
       <Group>
-        <Tooltip label="Download to device">
-          <ActionIcon size="xs">
-            <Download />
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip label="Delete permanently">
-          <ActionIcon size="xs">
+        {item.exists ? (
+          <Tooltip label="Remove from device">
+            <ActionIcon
+              size="sm"
+              onClick={() => {
+                window.Main.send(
+                  'app:file:remove',
+                  path + item.name.slice(0, item.name.length - 4)
+                )
+                refresh()
+              }}
+            >
+              <X />
+            </ActionIcon>
+          </Tooltip>
+        ) : (
+          <Tooltip label="Download folder">
+            <ActionIcon size="sm">
+              <Download />
+            </ActionIcon>
+          </Tooltip>
+        )}
+        <Tooltip label="Remove permanently">
+          <ActionIcon
+            size="xs"
+            // onClick={() => window.Main.send('app:file:delete', item)}
+          >
             <Trash />
           </ActionIcon>
         </Tooltip>
@@ -45,7 +73,7 @@ function File({ item }: any) {
   )
 }
 
-function Directory({ item, path }: any) {
+function Directory({ item, path, filter }: any) {
   const [loaded, setLoaded] = useState(false)
   const [data, setData] = useState<Array<any> | null>(null)
 
@@ -67,14 +95,22 @@ function Directory({ item, path }: any) {
     return (
       <Group position="apart">
         <Text>
-          {name.length > 32 ? item.name.slice(0, 30) + '...' : item.name}
+          {name.length > 20 ? item.name.slice(0, 20) + '...' : item.name}
         </Text>
         <Group>
-          <Tooltip label="Download folder">
-            <ActionIcon size="sm">
-              <Download />
-            </ActionIcon>
-          </Tooltip>
+          {item.exists ? (
+            <Tooltip label="Remove from device">
+              <ActionIcon size="sm">
+                <X />
+              </ActionIcon>
+            </Tooltip>
+          ) : (
+            <Tooltip label="Download folder">
+              <ActionIcon size="sm">
+                <Download />
+              </ActionIcon>
+            </Tooltip>
+          )}
           <Tooltip label="Delete folder">
             <ActionIcon size="sm">
               <Trash />
@@ -85,10 +121,21 @@ function Directory({ item, path }: any) {
     )
   }
 
+  if (
+    !item.name.toLowerCase().includes(filter.trim().toLowerCase()) &&
+    (!data ||
+      data.every(
+        element =>
+          !element.name.toLowerCase().includes(filter.trim().toLowerCase())
+      ))
+  )
+    return null
+
   return (
     <Accordion sx={{ width: '100%' }}>
       <Accordion.Item
         onTransitionEnd={loadData}
+        icon={<Folder size="16px" />}
         label={<Label name={item.name} />}
         classNames={classes}
       >
@@ -101,10 +148,26 @@ function Directory({ item, path }: any) {
         ) : (
           <>
             {data.map((itm: any, i: number) => {
-              if (itm.type == 'file') return <File key={i} item={itm} />
-              else if (itm.type == 'directory')
+              if (itm.type == 'directory')
                 return (
-                  <Directory key={i} item={itm} path={path + item.name + '/'} />
+                  <Directory
+                    key={i}
+                    item={itm}
+                    path={path + item.name + '/'}
+                    filter={filter}
+                  />
+                )
+            })}
+            {data.map((itm: any, i: number) => {
+              if (itm.type == 'file')
+                return (
+                  <File
+                    key={i}
+                    item={itm}
+                    path={path + item.name + '/'}
+                    filter={filter}
+                    refresh={loadData}
+                  />
                 )
             })}
           </>
@@ -114,7 +177,7 @@ function Directory({ item, path }: any) {
   )
 }
 
-function Display({ data }: any) {
+function Display({ data, filter, refresh }: any) {
   return (
     <>
       {data.length == 0 ? (
@@ -133,15 +196,27 @@ function Display({ data }: any) {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            height: '100%',
+            height: '75vh',
             width: '100%',
             paddingRight: '0.75rem',
+            flexGrow: 1,
           }}
         >
-          {data.map((item: any, i: number) => {
-            if (item.type == 'file') return <File key={i} item={item} />
-            else if (item.type == 'directory')
-              return <Directory key={i} item={item} path="/" />
+          {data.map((itm: any, i: number) => {
+            if (itm.type == 'directory')
+              return <Directory key={i} item={itm} path={'/'} filter={filter} />
+          })}
+          {data.map((itm: any, i: number) => {
+            if (itm.type == 'file')
+              return (
+                <File
+                  key={i}
+                  item={itm}
+                  path={'/'}
+                  filter={filter}
+                  refresh={refresh}
+                />
+              )
           })}
         </ScrollArea>
       )}
@@ -149,27 +224,58 @@ function Display({ data }: any) {
   )
 }
 
-export function Files({ data }: any) {
-  const { loaded } = useEstuary()
+export function Files() {
+  const [filter, setFilter] = useState('')
+
+  const [loaded, setLoaded] = useState(false)
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    setData(window.Main.sendSync('app:files:get', '/'))
+    setLoaded(true)
+  }, [])
+
+  const refresh = () => {
+    setLoaded(false)
+    setData(window.Main.sendSync('app:files:get', '/'))
+    setLoaded(true)
+  }
 
   return (
     <Group
       direction="column"
       position="center"
       align="center"
-      sx={{ height: '80vh', width: '100vw' }}
+      sx={{ width: '100vw', flexGrow: 1 }}
+      spacing={0}
     >
+      <Group px="md" sx={{ width: '100%', borderBottom: '1px solid gray' }}>
+        <TextInput
+          size="md"
+          variant="unstyled"
+          placeholder="Search"
+          value={filter}
+          onChange={e => setFilter(e.currentTarget.value)}
+          sx={{ flexGrow: 1 }}
+        />
+        <Tooltip label="Refresh">
+          <ActionIcon onClick={refresh}>
+            <Refresh />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
       {!loaded ? (
         <>
-          <Skeleton width="100%" height="10vh" />
-          <Skeleton width="100%" height="10vh" />
-          <Skeleton width="100%" height="10vh" />
-          <Skeleton width="100%" height="10vh" />
-          <Skeleton width="100%" height="10vh" />
-          <Skeleton width="100%" height="10vh" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
+          <Skeleton width="90%" height="8vh" p="md" />
         </>
       ) : (
-        <Display data={data} />
+        <Display data={data} filter={filter} refresh={refresh} />
       )}
     </Group>
   )
