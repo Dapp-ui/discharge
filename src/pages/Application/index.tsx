@@ -5,7 +5,6 @@ import { Files } from './Files'
 import { Preferences } from './Preferences'
 import { Uploading } from './Uploading'
 import { useElectron } from '../../providers/ElectronProvider'
-import { getItems } from '../../lib/estuary'
 
 export function Application() {
   const [active, setActive] = useState('files')

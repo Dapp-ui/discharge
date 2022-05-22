@@ -17,7 +17,6 @@ import { Ban, Check, CircleCheck, Copy, Cross, Flag } from 'tabler-icons-react'
 import { DirectoryButton, CopyButton } from './styles'
 import { useElectron } from '../../providers/ElectronProvider'
 import { AES } from 'crypto-js'
-import { ESTUARY_API_KEY } from '../../lib/estuary'
 
 export function Onboarding() {
   const { preferences, setPage } = useElectron()
@@ -31,22 +30,7 @@ export function Onboarding() {
 
   useEffect(() => {
     if (preferences && preferences.uid) return
-    fetch('https://api.estuary.tech/collections/create', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${ESTUARY_API_KEY}`,
-      },
-      body: JSON.stringify({
-        name: 'Discharge Data',
-        description: 'A collection of data for a specific user of Discharge.',
-      }),
-    })
-      .then(data => {
-        return data.json()
-      })
-      .then(data => {
-        window.Main.send('app:preferences:set:uid', data.uuid)
-      })
+    window.Main.send('app:preferences:create:uid')
   }, [])
 
   const chooseDirectory = () => window.Main.send('app:preferences:set:path')

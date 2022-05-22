@@ -3,7 +3,15 @@ import chokidar from 'chokidar'
 import fs from 'fs'
 
 import { Store } from './storage'
-import { deleteItem, encrypt, getItems, uploadFile } from './estuary'
+import {
+  createCollection,
+  decrypt,
+  deleteItem,
+  encrypt,
+  getItems,
+  readItem,
+  uploadFile,
+} from './estuary'
 
 import {
   app,
@@ -117,9 +125,9 @@ async function registerListeners() {
     }
   })
 
-  ipcMain.on('app:preferences:set:uid', async (event, uid) => {
-    preferences.set('uid', uid)
-    event.reply('client:preferences:updated', preferences.data)
+  ipcMain.on('app:preferences:set:uid', async (_, __) => {
+    if (!preferences.get('uid'))
+      preferences.set('uid', await createCollection())
   })
 
   ipcMain.on('app:preferences:set:key', async (event, key) => {
@@ -150,6 +158,47 @@ async function registerListeners() {
     event.returnValue = files
   })
 
+  ipcMain.on('app:files:select', async (event, _) => {
+    const response = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+    })
+    if (response.canceled) event.reply('client:files:selected', null)
+    else {
+      event.reply('client:files:selected', response.filePaths)
+      for (let i = 0; i < response.filePaths.length; i++) {
+        const out = await encrypt(
+          response.filePaths[i],
+          preferences.get('key'),
+          join(app.getPath('userData'), 'Temp')
+        )
+        const path = out.substring(out.lastIndexOf('\\'))
+        await uploadFile(preferences.get('uid'), out, path, null)
+      }
+    }
+  })
+
+  ipcMain.on('app:folder:select', async (event, _) => {
+    const response = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+    })
+    if (response.canceled) event.reply('client:folder:selected', null)
+    else {
+      event.reply('client:folder:selected', response.filePaths[0])
+    }
+  })
+
+  ipcMain.on('app:file:download', async (event, data) => {
+    const file = data.file
+    const directory = data.directory.replace(/\//g, '\\')
+    const path = await readItem(file, join(app.getPath('userData'), 'Temp'))
+    await decrypt(
+      path,
+      preferences.get('key'),
+      join(preferences.get('path'), directory)
+    )
+    event.reply(`client:file:loaded:${directory + file.name}`)
+  })
+
   ipcMain.on('app:file:delete', async (event, file) => {
     console.log(file)
     try {
@@ -159,9 +208,12 @@ async function registerListeners() {
     }
   })
 
-  ipcMain.on('app:file:remove', (_, path) => {
+  ipcMain.on('app:file:remove', (event, path) => {
     const full = join(preferences.get('path'), path)
-    fs.rmSync(full)
+    fs.unlinkSync(full)
+    event.reply(
+      `client:file:removed:${full.replace(preferences.get('path'), '')}`
+    )
   })
 
   /* Chokidar (Directory) Listeners */
@@ -174,13 +226,13 @@ async function registerListeners() {
         join(app.getPath('userData'), 'Temp')
       )
       const dir = path.replace(preferences.get('path'), '') + '.enc'
-      await uploadFile(preferences.get('uid'), out, dir, event => {
-        const complete = (((event.loaded / event.total) * 100) | 0) + '%'
-        console.log('upload percent: ' + complete)
-      })
-      fs.rmSync(out)
+      await uploadFile(preferences.get('uid'), out, dir, null)
+      fs.unlinkSync(out)
+      window?.webContents.send('client:refresh')
     }
   })
+
+  watcher.on('unlink', (path: string) => {})
 }
 
 app
