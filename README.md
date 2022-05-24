@@ -1,35 +1,6 @@
-## Electron + TypeScript + React
+# Discharge
+### Free, secure and unlimited data storage.
 
-Boilerplate for a project using Electron, React and Typescript.
+A submission to Chainlink Spring 2022 Hackthon, Discharge is a desktop application that brings the benefits of FileCoin straight to your desktop. After downloading setup  your credentials then choose a directory to begin backing up and securely uploading your data directly to IPFS. 
 
-## Installation
 
-Use a package manager of your choice (npm, yarn, etc.) in order to install all dependencies
-
-```bash
-yarn
-```
-
-## Usage
-
-Just run `start` script.
-
-```bash
-yarn start
-```
-
-## Packaging
-
-To generate the project package based on the OS you're running on, just run:
-
-```bash
-yarn package
-```
-
-## Contributing
-
-Pull requests are always welcome 😃.
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
