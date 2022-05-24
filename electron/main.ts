@@ -54,7 +54,7 @@ const watcher = chokidar.watch(preferences.get('path'), {
 })
 
 function createTray() {
-  const icon = join(__dirname, 'assets', 'logo.ico') // required.
+  const icon = join(__dirname, 'assets', 'icon.ico') // required.
   const trayicon = nativeImage.createFromPath(icon)
   tray = new Tray(trayicon.resize({ width: 16 }))
   const contextMenu = Menu.buildFromTemplate([
@@ -78,7 +78,7 @@ function createWindow() {
   if (!tray) createTray()
 
   window = new BrowserWindow({
-    icon: join(__dirname, 'assets', 'logo.ico'),
+    icon: join(__dirname, 'assets', 'icon.ico'),
     resizable: false,
     width: 400,
     height: 600,
@@ -110,6 +110,11 @@ async function registerListeners() {
     event.returnValue = preferences.data
   })
 
+  ipcMain.on('app:preferences:delete', (event, _) => {
+    fs.rmSync(join(app.getPath('userData'), 'preferences.config'))
+    event.reply('client:preferences:updated')
+  })
+
   ipcMain.on('app:preferences:set:path', async (event, data) => {
     try {
       const response = await dialog.showOpenDialog({
@@ -125,9 +130,15 @@ async function registerListeners() {
     }
   })
 
-  ipcMain.on('app:preferences:set:uid', async (_, __) => {
-    if (!preferences.get('uid'))
-      preferences.set('uid', await createCollection())
+  ipcMain.on('app:preferences:create:uid', async (_, __) => {
+    if (!preferences.get('uid')) {
+      const collection = await createCollection()
+      preferences.set('uid', collection.uuid)
+    }
+  })
+
+  ipcMain.on('app:preferences:set:uid', async (_, uid) => {
+    if (!preferences.get('uid')) preferences.set('uid', uid)
   })
 
   ipcMain.on('app:preferences:set:key', async (event, key) => {
@@ -141,7 +152,11 @@ async function registerListeners() {
   })
 
   ipcMain.on('app:files:get', async (event, path) => {
-    let files = await getItems(preferences.get('uid'), path)
+    const files = await getItems(preferences.get('uid'), path)
+    if (files === null) {
+      event.returnValue = []
+      return
+    }
     for (let i = 0; i < files.length; i++) {
       if (
         fs.existsSync(

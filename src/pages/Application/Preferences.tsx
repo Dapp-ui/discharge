@@ -25,7 +25,7 @@ function Setting({ label, children }: any) {
 }
 
 export function Preferences() {
-  const { preferences } = useElectron()
+  const { preferences, setPage } = useElectron()
 
   const chooseDirectory = () => window.Main.send('app:preferences:set:path')
 
@@ -39,6 +39,11 @@ export function Preferences() {
 
   const updateSync = (value: string) =>
     window.Main.send('app:preferences:set:sync', value)
+
+  const deletePreferences = () => {
+    setPage('welcome')
+    window.Main.send('app:preferences:delete')
+  }
 
   return (
     <Group direction="column" mt="md">
@@ -57,8 +62,13 @@ export function Preferences() {
       </Setting>
       <Setting label="Admin">
         <Code>{preferences.uid}</Code>
-        <Button color="red" variant="light" fullWidth>
-          Delete All Data
+        <Button
+          onClick={deletePreferences}
+          color="red"
+          variant="light"
+          fullWidth
+        >
+          Sign Out
         </Button>
       </Setting>
     </Group>

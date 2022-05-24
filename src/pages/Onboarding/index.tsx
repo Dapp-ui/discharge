@@ -60,6 +60,7 @@ export function Onboarding() {
     if (password != confirm || !meets(password, requirements) || !checked)
       return
     const key = AES.encrypt(password, preferences.uid).toString()
+    window.Main.send('message', key)
     window.Main.send('app:preferences:set:key', key)
   }
 
