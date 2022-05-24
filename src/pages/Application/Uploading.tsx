@@ -4,6 +4,7 @@ import { CloudUpload, FolderPlus } from 'tabler-icons-react'
 
 export function Uploading() {
   const [uploading, setUploading] = useState(false)
+  const notifications = 
 
   return (
     <Stack
@@ -30,7 +31,9 @@ export function Uploading() {
         }}
         onClick={() => {
           window.Main.send('app:files:select')
-          window.Main.once('client:files:selected', (files: any) => {})
+          window.Main.once('client:files:selected', (files: any) => {
+
+          })
         }}
       >
         <CloudUpload size="32px" />
