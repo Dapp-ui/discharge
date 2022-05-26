@@ -137,8 +137,9 @@ async function registerListeners() {
     }
   })
 
-  ipcMain.on('app:preferences:set:uid', async (_, uid) => {
+  ipcMain.on('app:preferences:set:uid', async (event, uid) => {
     if (!preferences.get('uid')) preferences.set('uid', uid)
+    event.reply('client:preferences:updated', preferences.data)
   })
 
   ipcMain.on('app:preferences:set:key', async (event, key) => {
@@ -206,6 +207,8 @@ async function registerListeners() {
     const file = data.file
     const directory = data.directory.replace(/\//g, '\\')
     const path = await readItem(file, join(app.getPath('userData'), 'Temp'))
+    if (!fs.existsSync(join(preferences.get('path'), directory)))
+      fs.mkdirSync(join(preferences.get('path'), directory))
     await decrypt(
       path,
       preferences.get('key'),
@@ -247,7 +250,11 @@ async function registerListeners() {
     }
   })
 
-  watcher.on('unlink', (path: string) => {})
+  watcher.on('unlink', (path: string) => {
+    window?.webContents.send(
+      `client:file:removed:${path.replace(preferences.get('path'), '')}`
+    )
+  })
 }
 
 app

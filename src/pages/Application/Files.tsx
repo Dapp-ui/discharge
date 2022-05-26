@@ -276,7 +276,7 @@ export function Files() {
 
   useEffect(() => {
     setData(window.Main.sendSync('app:files:get', '/'))
-    window.Main.on('client:refresh', () => refresh)
+    window.Main.on('client:refresh', refresh)
     setLoaded(true)
     return () => window.Main.removeEventListener('client:refresh')
   }, [])
